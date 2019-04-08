@@ -131,7 +131,7 @@ namespace SuperSQLInjection.bypass
                     {
                         String key = ite.Key.ToString();
                         if (!String.IsNullOrEmpty(key)) {
-                            str = str.ToLower().Replace(key, ite.Value + "");
+                            str = str.Replace(key, ite.Value + "");
                         }
                         
                     }
@@ -212,47 +212,72 @@ namespace SuperSQLInjection.bypass
             }
             return sb.ToString();
         }
+
+
         public static String bypassUseBetweentAnd(Config config,String paylaod) {
 
-            String newpayload = "";
             if (config.useBetweenByPass)
             {
-                Match m = Regex.Match(paylaod, @"(?<str>[\>\<\=]+)(?<len>\d+)");
-                String str = m.Groups["str"].Value;
+                
 
-                if (String.IsNullOrEmpty(m.Groups["len"].Value))
-                {
+                MatchCollection mc=Regex.Matches(paylaod, @"(?<str>[\>\<\=]+)(?<len>\d+)"); ;
+                if (mc.Count <= 0) {
                     return paylaod;
                 }
-                int len = Tools.convertToInt(m.Groups["len"].Value);
-                if (str.Equals(">="))
+                int offset = 0;
+                foreach (Match mt in mc)
                 {
-                    newpayload = Regex.Replace(paylaod, @"[\>\=]+\d+", " not between 0 and " + (len - 1));
+                    String mstr = mt.Groups["str"].Value;
+                    int findex = mt.Index;
+                    String is16 = "";
+                    if (findex!=0&&findex < paylaod.Length- mt.Length- offset) {
+                        is16 = paylaod.Substring(findex + offset, mt.Length + 1);
+                    }
+                    if (is16.Contains("0x"))
+                    {
+                        //判断是否存在16进制情况，有则跳出
+                        continue;
+                    }
+                    else
+                    {
+                        int len = Tools.convertToInt(mt.Groups["len"].Value);
+                      
+                        if (mstr.Contains(">="))
+                        {
+                            String rp = " not between 0 and " + (len - 1);
+                            paylaod =paylaod.Remove(findex+offset, mt.Length).Insert(findex+offset, rp);
+                            offset += rp.Length- mt.Length;
+                        }
+                        else if (mstr.Equals("<="))
+                        {
+                            String rp = " between 0 and " + len;
+                            paylaod =paylaod.Remove(findex, mt.Length).Insert(findex, rp);
+                           
+                        }
+                        else if (mstr.Equals(">"))
+                        {
+                            String rp = " not between 0 and " + len;
+                            paylaod =paylaod.Remove(findex+ offset, mt.Length).Insert(findex+ offset, rp);
+                            offset += rp.Length - mt.Length;
+                        }
+                        else if (mstr.Equals("="))
+                        {
+                            String rp = " between " + len + " and " + len;
+                            paylaod =paylaod.Remove(findex + offset, mt.Length).Insert(findex + offset, rp);
+                            offset += rp.Length - mt.Length;
+                        }
+
+                        else if (mstr.Equals("<"))
+                        {
+                            String rp = " between 0 and " + (len - 1);
+                            paylaod =paylaod.Remove(findex, mt.Length).Insert(findex, rp);
+                            offset += rp.Length - mt.Length;
+                        }
+                    }
 
                 }
-                else if (str.Equals(">"))
-                {
-
-                    newpayload = Regex.Replace(paylaod, @"[\>\=]+\d+", " not between 0 and " + len);
-                }
-                else if (str.Equals("="))
-                {
-                    newpayload = Regex.Replace(paylaod, @"[\>\=]+\d+", " between " + len + " and " + len);
-                }
-                else if (str.Equals("<="))
-                {
-                    newpayload = Regex.Replace(paylaod, @"[\<\=]+\d+", " between 0 and " + len);
-                }
-                else if (str.Equals("<"))
-                {
-                    newpayload = Regex.Replace(paylaod, @"[\<=]+\d+", " between 0 and " + (len - 1));
-                }
             }
-            else {
-                newpayload = paylaod;
-            }
-      
-            return newpayload;
+            return paylaod;
         }
    
         public static String toLowerOrUpperCase(String oldStr, String split,int changeType)
@@ -266,7 +291,7 @@ namespace SuperSQLInjection.bypass
 
                     String keyStr =m.Groups[0].Value;
                     //库名.表,全局变量,环境变量不处理防止部分情况出现错误
-                    if (keyStr.IndexOf(".") != -1||keyStr.IndexOf("@") != -1 || keyStr.IndexOf("()") != -1) {
+                    if (keyStr.IndexOf("'") != -1||keyStr.IndexOf(".") != -1||keyStr.IndexOf("@") != -1 || keyStr.IndexOf("()") != -1) {
                         continue;
                     }
                     if (changeType == 1) {

